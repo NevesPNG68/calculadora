@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Valores de Navio</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f2f2f7;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    h1 {
+      text-align: center;
+      color: #007aff;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    select, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007aff;
+      color: white;
+      font-weight: bold;
+      border: none;
+      margin-top: 10px;
+    }
+    .results {
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+      padding-top: 15px;
+    }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .highlight {
+      color: #ff3b30;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculadora de Navio</h1>
+    <div class="form-group">
+      <label for="acordo">Acordo</label>
+      <select id="acordo"></select>
+    </div>
+    <div class="form-group">
+      <label for="tipo-navio">Tipo de Navio</label>
+      <select id="tipo-navio"></select>
+    </div>
+    <div class="form-group">
+      <label for="faixa-tonelagem">Faixa de Tonelagem</label>
+      <select id="faixa-tonelagem"></select>
+    </div>
+    <button onclick="calcular()">Calcular</button>
+    <div class="results">
+      <div class="result-item"><span>Valor Base:</span><span id="valor-base">-</span></div>
+      <div class="result-item"><span>Valor Dobrado:</span><span id="valor-dobrado">-</span></div>
+      <div class="result-item"><span>Valor Final:</span><span id="valor-final" class="highlight">-</span></div>
+    </div>
+  </div>
+  <script>
+const dadosExtraidos = {
+  acordos: ["CNNT","CNNT","CNNT","CNNT","CNNT","CNNT","PETROBRAS","PETROBRAS","SINDAPAR","ABAC","ABAC"],
+  tipos_navio: ["Full Container","Carga Geral","Graneleiro","Full Container-Por tempo","Full Container-Por viagem","Tanque","Tanque","Full Container","Full Container","Full Container-BB","Full Container"],
+  faixas_tonelagem: ["0 a 10","10 a 20","20 a 30","30 a 40","40 a 50","50 a 60","60 a 70","70 a 80","80 a 90","90 a 100"],
+  matriz_valores: [
+    [17375.71,19113.28,22591.95,17375.71,17375.71,19113.28,19821.78,17375.71,17375.71,17376,17375.71],
+    [22583.66,24842.05,29363.55,22583.66,22583.66,24842.05,28926.52,22583.66,22583.66,20925.3,22583.66],
+    [27795.78,30575.36,36139.27,27795.78,27795.78,30575.36,39833.23,27795.78,27795.78,25754.3,27795.78],
+    [33007.9,36308.67,42914.99,33007.9,33007.9,36308.67,52541.91,33007.9,33007.9,31903.3,33007.9],
+    [38220.02,42041.98,49690.71,38220.02,38220.02,42041.98,67052.56,38220.02,38220.02,39372.3,38220.02],
+    [43432.14,47775.29,56466.43,43432.14,43432.14,47775.29,83365.18,43432.14,43432.14,48161.3,43432.14],
+    [48644.26,53508.6,63242.15,48644.26,48644.26,53508.6,101479.77,48644.26,48644.26,58270.3,48644.26],
+    [53856.38,59241.91,70017.87,53856.38,53856.38,59241.91,121396.33,53856.38,53856.38,69699.3,53856.38],
+    [59068.5,64975.22,76793.59,59068.5,59068.5,64975.22,143114.86,59068.5,59068.5,82448.3,59068.5],
+    [64280.62,70708.53,83569.31,64280.62,64280.62,70708.53,166635.36,64280.62,64280.62,96517.3,64280.62]
+  ]
+};
+
+const dadosPlanilha = {
+  acordos: [...new Set(dadosExtraidos.acordos)],
+  tipos_navio: [...new Set(dadosExtraidos.tipos_navio)],
+  faixas_tonelagem: dadosExtraidos.faixas_tonelagem,
+  matriz_valores: dadosExtraidos.matriz_valores
+};
+
+function preencherSelects() {
+  const acordo = document.getElementById("acordo");
+  const tipo = document.getElementById("tipo-navio");
+  const faixa = document.getElementById("faixa-tonelagem");
+
+  dadosPlanilha.acordos.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    acordo.appendChild(opt);
+  });
+
+  dadosPlanilha.tipos_navio.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    tipo.appendChild(opt);
+  });
+
+  dadosPlanilha.faixas_tonelagem.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    faixa.appendChild(opt);
+  });
+}
+
+function buscarValor(acordo, tipo, faixa) {
+  const row = dadosPlanilha.faixas_tonelagem.indexOf(faixa);
+  const col = dadosExtraidos.acordos.findIndex((a, i) => a === acordo && dadosExtraidos.tipos_navio[i] === tipo);
+  return (row > -1 && col > -1) ? dadosPlanilha.matriz_valores[row][col] : 'Não Encontrado';
+}
+
+function calcularFinal(acordo, base, dobrado) {
+  if (base === 'Não Encontrado') return '-';
+  let mult = 0;
+  let ref = base;
+  if (acordo === 'CNNT') mult = 0.36;
+  else if (acordo === 'PETROBRAS') mult = 0.33;
+  else if (acordo === 'SINDAPAR') { mult = 0.55; ref = dobrado; }
+  else if (acordo === 'ABAC') mult = 0.85;
+  return dobrado + ref * mult;
+}
+
+function formatar(valor) {
+  return (typeof valor === 'number') ? valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) : valor;
+}
+
+function calcular() {
+  const acordo = document.getElementById("acordo").value;
+  const tipo = document.getElementById("tipo-navio").value;
+  const faixa = document.getElementById("faixa-tonelagem").value;
+  const base = buscarValor(acordo, tipo, faixa);
+  const dobrado = (base !== 'Não Encontrado') ? base * 2 : '-';
+  const final = (base !== 'Não Encontrado') ? calcularFinal(acordo, base, base * 2) : '-';
+  document.getElementById("valor-base").textContent = formatar(base);
+  document.getElementById("valor-dobrado").textContent = formatar(dobrado);
+  document.getElementById("valor-final").textContent = formatar(final);
+}
+
+document.addEventListener("DOMContentLoaded", preencherSelects);
+</script>
+</body>
+</html>
